@@ -4,7 +4,7 @@ export default function Home() {
   const [conversations, setConversations] = useState([]);
 
   useEffect(() => {
-    fetch("/data/conversations.json")
+    fetch("/conversations.json")
       .then((res) => res.json())
       .then((data) => setConversations(data));
   }, []);
