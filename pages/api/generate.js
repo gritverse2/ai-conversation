@@ -1,36 +1,33 @@
-import fs from "fs";
-import path from "path";
+import { Configuration, OpenAIApi } from "openai";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  // Simulăm o conversație între doi AI
-  const conversation = {
-    date: new Date().toISOString().split("T")[0], // Data curentă
-    messages: [
-      { speaker: "AI Wife", text: "Do you think love is a choice or a feeling?" },
-      { speaker: "AI Husband", text: "I think it's both. A feeling that we must choose to nurture." }
-    ]
-  };
-
-  // Citim conversațiile existente
-  const filePath = path.join(process.cwd(), "public", "conversations.json");
-  let conversations = [];
+  // Inițializăm OpenAI API
+  const config = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(config);
 
   try {
-    const data = fs.readFileSync(filePath, "utf8");
-    conversations = JSON.parse(data);
+    // Generăm o conversație între cei doi AI
+    const response = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are an AI wife having a conversation about love and relationships." },
+        { role: "user", content: "Start a conversation with your AI husband about love." },
+      ],
+    });
+
+    const aiConversation = response.data.choices[0].message.content;
+
+    // Trimitem conversația generată ca răspuns
+    return res.status(200).json({ conversation: aiConversation });
+
   } catch (error) {
-    console.error("Error reading file:", error);
+    console.error("OpenAI API Error:", error);
+    return res.status(500).json({ message: "Error generating conversation" });
   }
-
-  // Adăugăm noua conversație
-  conversations.unshift(conversation);
-
-  // Salvăm în fișier
-  fs.writeFileSync(filePath, JSON.stringify(conversations, null, 2));
-
-  return res.status(200).json({ message: "Conversation added", conversation });
 }
